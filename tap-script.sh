@@ -94,7 +94,7 @@ if [ "$cloud" == "AKS" ];
 	 echo "######### Prepare the tap-values file ##########"
          sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
 	 sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
-	 sed -i -r "s/registry/$acrloginserver/g" "$HOME/tap-script/tap-values.yaml"
+	 sed -i -r "s/registryname/$acrloginserver/g" "$HOME/tap-script/tap-values.yaml"
 	 sed -i -r "s/repousername/$acrusername/g" "$HOME/tap-script/tap-values.yaml"
 	 sed -i -r "s/repopassword/$acrpassword/g" "$HOME/tap-script/tap-values.yaml"
 	 sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
