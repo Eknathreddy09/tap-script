@@ -4,8 +4,8 @@ buildservice:
   kp_default_repository: "registry/build-service" # Replace the project id with yours. In my case eknath-se is the project ID
   kp_default_repository_username: "repousername"
   kp_default_repository_password: "repopassword"
-  tanzunet_username: "eknath.reddy09@gmail.com" # Provide the Tanzu network user name
-  tanzunet_password: "" # Provide the Tanzu network password
+  tanzunet_username: "tanzunetusername" # Provide the Tanzu network user name
+  tanzunet_password: "tanzunetpassword" # Provide the Tanzu network password
   descriptor_name: "tap-1.0.0-full"
   enable_automatic_dependency_updates: true
 supply_chain: testing_scanning
