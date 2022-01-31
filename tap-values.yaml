@@ -1,0 +1,46 @@
+profile: full
+ceip_policy_disclosed: true # Installation fails if this is set to 'false'
+buildservice:
+  kp_default_repository: "registry/build-service" # Replace the project id with yours. In my case eknath-se is the project ID
+  kp_default_repository_username: "repousername"
+  kp_default_repository_password: "repopassword"
+  tanzunet_username: "eknath.reddy09@gmail.com" # Provide the Tanzu network user name
+  tanzunet_password: "" # Provide the Tanzu network password
+  descriptor_name: "tap-1.0.0-full"
+  enable_automatic_dependency_updates: true
+supply_chain: testing_scanning
+ootb_supply_chain_testing_scanning:
+  registry:
+    server: "registry"
+    repository: "supply-chain" # Replace the project id with yours. In my case eknath-se is the project ID
+  gitops:
+    ssh_secret: ""
+  cluster_builder: default
+  service_account: default
+
+learningcenter:
+  ingressDomain: "domainname"
+
+metadata_store:
+  app_service_type: LoadBalancer # (optional) Defaults to LoadBalancer. Change to NodePort for distributions that don't support LoadBalancer
+contour:
+  envoy:
+    service:
+      type: LoadBalancer
+tap_gui:
+  service_type: LoadBalancer
+  app_config:
+    app:
+      baseUrl: http://lbip:7000
+    integrations:
+      github: # Other integrations available see NOTE below
+        - host: github.com
+          token: githubtoken
+    catalog:
+      locations:
+        - type: url
+          target: https://github.com/Eknathreddy09/tanzu-java-web-app/blob/main/catalog/catalog-info.yaml
+    backend:
+      baseUrl: http://lbip:7000
+      cors:
+        origin: http://lbip:7000
