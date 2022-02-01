@@ -136,8 +136,74 @@ elif [ "$cloud" == "EKS" ];
          echo "#########################################"
 	 aws --version
          echo "#########################################"
-         echo "#########################################"
+         echo "############# Provide AWS access key and secrets  ##########################"
+         aws configure
+         read -p "Enter AWS session token: " aws_token
+         aws configure set aws_session_token $aws_token
+         echo "############ Install Kubectl #######################"
+         curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+         sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+         echo "############  Kubectl Version #######################"
+         kubectl version
+         
+echo "################## Creating IAM Roles for EKS Cluster and nodes ###################### "
+cat <<EOF > cluster-role-trust-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "eks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
 
+cat <<EOF > node-role-trust-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+
+aws iam create-role --role-name tap-EKSClusterRole --assume-role-policy-document file://"cluster-role-trust-policy.json"
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy --role-name tap-EKSClusterRole
+aws iam create-role --role-name tap-EKSNodeRole --assume-role-policy-document file://"node-role-trust-policy.json"
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy --role-name tap-EKSNodeRole
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly --role-name tap-EKSNodeRole
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy --role-name tap-EKSNodeRole
+
+echo "########################### Creating VPC Stacks through cloud formation ##############################"
+
+aws cloudformation create-stack --region ap-south-1 --stack-name tap-demo-vpc-stack --template-url https://amazon-eks.s3.us-west-2.amazonaws.com/cloudformation/2020-10-29/amazon-eks-vpc-private-subnets.yaml
+pubsubnet1=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=tap-demo-vpc-stack-PublicSubnet01 --query Subnets[0].SubnetId --output text)
+pubsubnet2=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=tap-demo-vpc-stack-PublicSubnet02 --query Subnets[0].SubnetId --output text)
+rolearn=$(aws iam get-role --role-name tap-EKSClusterRole --query Role.Arn --output text)
+sgid=$(aws ec2 describe-security-groups --filters Name=description,Values="Cluster communication with worker nodes" --query SecurityGroups[0].GroupId --output text)
+
+echo "########################## Creating EKS Cluster ########################################"
+
+aws eks create-cluster --region ap-south-1 --name tap-demo-ekscluster --kubernetes-version 1.21 --role-arn $rolearn --resources-vpc-config subnetIds=$pubsubnet1,$pubsubnet2,securityGroupIds=$sgid
+aws eks update-kubeconfig --region ap-south-1 --name tap-demo-ekscluster
+
+echo "######################### fetch the nodes and services ###########################"
+
+kubectl get nodes
+kubectl get svc
+rolenodearn=$(aws iam get-role --role-name tap-EKSNodeRole --query Role.Arn --output text)
+echo "######################### Creating Node Group ###########################"
+aws eks create-nodegroup --cluster-name tap-demo-ekscluster --nodegroup-name tap-demo-eksclusterng --node-role $rolenodearn --instance-types t2.2xlarge --scaling-config minSize=1,maxSize=2,desiredSize=2 --disk-size 40  --subnets $pubsubnet1
 
 elif [ "$cloud" == "GKE" ];
  then
