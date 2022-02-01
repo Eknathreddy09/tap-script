@@ -108,6 +108,14 @@ if [ "$cloud" == "AKS" ];
 	 sudo apt-get install docker-ce docker-ce-cli containerd.io -y
 	 sudo usermod -aG docker $USER
          echo "####### Verify Docker Version  ###########"
+         sudo apt-get install jq -y
+         kubectl create ns tap-install
+         export INSTALL_REGISTRY_USERNAME=$tanzunetusername
+         export INSTALL_REGISTRY_PASSWORD=$tanzunetpassword
+         export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
+         tanzu secret registry add tap-registry --username ${INSTALL_REGISTRY_USERNAME} --password ${INSTALL_REGISTRY_PASSWORD} --server ${INSTALL_REGISTRY_HOSTNAME} --export-to-all-namespaces --yes --namespace tap-install
+         kubectl create secret docker-registry registry-credentials --docker-server=$acrloginserver --docker-username=$acrusername --docker-password=$acrpassword -n tap-install
+         kubectl create secret docker-registry image-secret --docker-server=$acrloginserver --docker-username=$acrusername --docker-password=$acrpassword -n tap-install
          sudo reboot
 
 elif [ "$cloud" == "EKS" ];

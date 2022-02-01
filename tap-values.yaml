@@ -44,3 +44,6 @@ tap_gui:
       baseUrl: http://lbip:7000
       cors:
         origin: http://lbip:7000
+grype:
+  namespace: "tap-install" # (optional) Defaults to default namespace.
+  targetImagePullSecret: "registry-credentials"
