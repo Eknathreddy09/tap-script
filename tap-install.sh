@@ -61,7 +61,7 @@ tanzu apps cluster-supply-chain list
 
 echo "################ Developer namespace in tap-install #####################"
 
-cat <<EOF | kubectl -n tap-install apply -f -
+cat <<EOF > developer.yaml
 apiVersion: v1
 kind: Secret
 metadata:
@@ -144,38 +144,6 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: default
-
----
-
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: developer-defined-tekton-pipeline
-  labels:
-    apps.tanzu.vmware.com/pipeline: test      # (!) required
-spec:
-  params:
-    - name: source-url                        # (!) required
-    - name: source-revision                   # (!) required
-  tasks:
-    - name: test
-      params:
-        - name: source-url
-          value: $(params.source-url)
-        - name: source-revision
-          value: $(params.source-revision)
-      taskSpec:
-        params:
-          - name: source-url
-          - name: source-revision
-        steps:
-          - name: test
-            image: gradle
-            script: |-
-              cd `mktemp -d`
-              wget -qO- $(params.source-url) | tar xvz
-              ./mvnw test
-
 ---
 apiVersion: scanning.apps.tanzu.vmware.com/v1beta1
 kind: ScanPolicy
@@ -208,3 +176,45 @@ spec:
     isCompliant = isSafe(input.currentVulnerability)
 
 EOF
+cat <<EOF >  tekton-pipeline.yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: developer-defined-tekton-pipeline
+  labels:
+    apps.tanzu.vmware.com/pipeline: test      # (!) required
+spec:
+  params:
+    - name: source-url                        # (!) required
+    - name: source-revision                   # (!) required
+  tasks:
+    - name: test
+      params:
+        - name: source-url
+          value: $(params.source-url)
+        - name: source-revision
+          value: $(params.source-revision)
+      taskSpec:
+        params:
+          - name: source-url
+          - name: source-revision
+        steps:
+          - name: test
+            image: gradle
+            script: |-
+              cd `mktemp -d`
+              wget -qO- $(params.source-url) | tar xvz
+              ./mvnw test
+EOF
+kubectl apply -f developer.yaml -n tap-install
+kubectl apply -f tekton-pipeline.yaml -n tap-install
+cat <<EOF > ootb-supply-chain-basic-values.yaml
+grype:
+  namespace: tap-install
+  targetImagePullSecret: registry-credentials
+EOF
+
+tanzu package install grype-scanner --package-name grype.scanning.apps.tanzu.vmware.com --version 1.0.0  --namespace tap-install -f ootb-supply-chain-basic-values.yaml
+tanzu apps workload create tanzu-java-web-app  --git-repo https://github.com/Eknathreddy09/tanzu-java-web-app --git-branch main --type web --label apps.tanzu.vmware.com/has-tests=true --label app.kubernetes.io/part-of=tanzu-java-web-app  --type web -n tap-install --yes
+tanzu apps workload get tanzu-java-web-app -n tap-install
+tanzu apps workload tail tanzu-java-web-app --since 10m --timestamp -n tap-install
