@@ -141,6 +141,7 @@ aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Po
 echo "########################### Creating VPC Stacks through cloud formation ##############################"
 
 aws cloudformation create-stack --region $region --stack-name tap-demo-vpc-stack --template-url https://amazon-eks.s3.us-west-2.amazonaws.com/cloudformation/2020-10-29/amazon-eks-vpc-private-subnets.yaml
+sleep 5m
 pubsubnet1=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=tap-demo-vpc-stack-PublicSubnet01 --query Subnets[0].SubnetId --output text)
 pubsubnet2=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=tap-demo-vpc-stack-PublicSubnet02 --query Subnets[0].SubnetId --output text)
 rolearn=$(aws iam get-role --role-name tap-EKSClusterRole --query Role.Arn --output text)
@@ -149,14 +150,16 @@ sgid=$(aws ec2 describe-security-groups --filters Name=description,Values="Clust
 echo "########################## Creating EKS Cluster ########################################"
 
 ekscreatecluster=$(aws eks create-cluster --region $region --name tap-demo-ekscluster --kubernetes-version 1.21 --role-arn $rolearn --resources-vpc-config subnetIds=$pubsubnet1,$pubsubnet2,securityGroupIds=$sgid)
+sleep 15m
 aws eks update-kubeconfig --region $region --name tap-demo-ekscluster
 
 rolenodearn=$(aws iam get-role --role-name tap-EKSNodeRole --query Role.Arn --output text)
 echo "######################### Creating Node Group ###########################"
 aws eks create-nodegroup --cluster-name tap-demo-ekscluster --nodegroup-name tap-demo-eksclusterng --node-role $rolenodearn --instance-types t2.2xlarge --scaling-config minSize=1,maxSize=2,desiredSize=2 --disk-size 40  --subnets $pubsubnet1
+sleep 15m
 echo "################ Create Repository ##################"
 aws ecr create-repository --repository-name tapdemoacr
-
+sleep 2m
 ecrusername=AWS
 ecrpassword=$(aws ecr get-login-password --region $region)
 ecrregistryid=$(aws ecr describe-repositories --repository-names tapdemoacr --query repositories[0].registryId --output text)
