@@ -8,7 +8,7 @@ read -p "Enter the Tanzu network username: " tanzunetusername
 read -p "Enter the Tanzu network password: " tanzunetpassword
 read -p "Enter the domain name for Learning center: " domainname
 read -p "Enter github token (to be collected from Githubportal): " githubtoken
-echo "You choose to deploy the kubernetes cluster on $cloud"
+echo " ######  You choose to deploy the kubernetes cluster on $cloud ########"
 if [ "$cloud" == "AKS" ];
  then
 	 
@@ -62,65 +62,20 @@ if [ "$cloud" == "AKS" ];
          else
    	          echo "Password Updated in tap values file"
          fi
-	 echo "############# Install Pivnet ###########"
-	 wget https://github.com/pivotal-cf/pivnet-cli/releases/download/v3.0.1/pivnet-linux-amd64-3.0.1
-	 chmod +x pivnet-linux-amd64-3.0.1
-	 sudo mv pivnet-linux-amd64-3.0.1 /usr/local/bin/pivnet
-         
-	 echo "########## Install Tanzu CLI  #############"
-	 pivnet login --api-token=${pivnettoken}
-         pivnet download-product-files --product-slug='tanzu-cluster-essentials' --release-version='1.0.0' --product-file-id=1105818
-	 mkdir $HOME/tanzu-cluster-essentials
-	 tar -xvf tanzu-cluster-essentials-linux-amd64-1.0.0.tgz -C $HOME/tanzu-cluster-essentials
-	 export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:82dfaf70656b54dcba0d4def85ccae1578ff27054e7533d08320244af7fb0343
-	 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
-	 export INSTALL_REGISTRY_USERNAME=$tanzunetusername
-	 export INSTALL_REGISTRY_PASSWORD=$tanzunetpassword
-	 cd $HOME/tanzu-cluster-essentials
-	 ./install.sh
-	 echo "######## Install Kapp ###########"
-	 sudo cp $HOME/tanzu-cluster-essentials/kapp /usr/local/bin/kapp
-         kapp version
-	 echo "#################################"
-         pivnet download-product-files --product-slug='tanzu-application-platform' --release-version='1.0.0' --product-file-id=1114447
-	 mkdir $HOME/tanzu
-         tar -xvf tanzu-framework-linux-amd64.tar -C $HOME/tanzu
-	 export TANZU_CLI_NO_INIT=true
-	 cd $HOME/tanzu
-         sudo install cli/core/v0.10.0/tanzu-core-linux_amd64 /usr/local/bin/tanzu
-         tanzu version
-	 tanzu plugin install --local cli all
-         tanzu plugin list
-	 echo "######### Prepare the tap-values file ##########"
+         echo "######### Prepare the tap-values file ##########"
          sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
-	 sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
-	 sed -i -r "s/registryname/$acrloginserver/g" "$HOME/tap-script/tap-values.yaml"
-	 sed -i -r "s/repousername/$acrusername/g" "$HOME/tap-script/tap-values.yaml"
-	 sed -i -r "s/repopassword/$acrpassword/g" "$HOME/tap-script/tap-values.yaml"
-	 sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
-	 sed -i -r "s/githubtoken/$githubtoken/g" "$HOME/tap-script/tap-values.yaml"
-	 echo "######### Install Docker ############"
-	 sudo apt-get update
-	 sudo apt-get install  ca-certificates curl  gnupg  lsb-release
-	 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-	 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-	 sudo apt-get update
-	 sudo apt-get install docker-ce docker-ce-cli containerd.io -y
-	 sudo usermod -aG docker $USER
-         echo "####### Verify Docker Version  ###########"
-         sudo apt-get install jq -y
+         sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/registryname/$acrloginserver/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/repousername/$acrusername/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/repopassword/$acrpassword/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/githubtoken/$githubtoken/g" "$HOME/tap-script/tap-values.yaml"
          kubectl create ns tap-install
-         export INSTALL_REGISTRY_USERNAME=$tanzunetusername
-         export INSTALL_REGISTRY_PASSWORD=$tanzunetpassword
-         export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
-         tanzu secret registry add tap-registry --username ${INSTALL_REGISTRY_USERNAME} --password ${INSTALL_REGISTRY_PASSWORD} --server ${INSTALL_REGISTRY_HOSTNAME} --export-to-all-namespaces --yes --namespace tap-install
          kubectl create secret docker-registry registry-credentials --docker-server=$acrloginserver --docker-username=$acrusername --docker-password=$acrpassword -n tap-install
          kubectl create secret docker-registry image-secret --docker-server=$acrloginserver --docker-username=$acrusername --docker-password=$acrpassword -n tap-install
-         sudo reboot
-
 elif [ "$cloud" == "EKS" ];
  then
-	 
+	 read -p "Enter the region: " region
          echo "#########################################"
          echo "#########################################"
 	 echo "Installing AWS cli"
@@ -145,8 +100,7 @@ elif [ "$cloud" == "EKS" ];
          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
          echo "############  Kubectl Version #######################"
          kubectl version
-         
-echo "################## Creating IAM Roles for EKS Cluster and nodes ###################### "
+         echo "################## Creating IAM Roles for EKS Cluster and nodes ###################### "
 cat <<EOF > cluster-role-trust-policy.json
 {
   "Version": "2012-10-17",
@@ -186,7 +140,7 @@ aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Po
 
 echo "########################### Creating VPC Stacks through cloud formation ##############################"
 
-aws cloudformation create-stack --region ap-south-1 --stack-name tap-demo-vpc-stack --template-url https://amazon-eks.s3.us-west-2.amazonaws.com/cloudformation/2020-10-29/amazon-eks-vpc-private-subnets.yaml
+aws cloudformation create-stack --region $region --stack-name tap-demo-vpc-stack --template-url https://amazon-eks.s3.us-west-2.amazonaws.com/cloudformation/2020-10-29/amazon-eks-vpc-private-subnets.yaml
 pubsubnet1=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=tap-demo-vpc-stack-PublicSubnet01 --query Subnets[0].SubnetId --output text)
 pubsubnet2=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=tap-demo-vpc-stack-PublicSubnet02 --query Subnets[0].SubnetId --output text)
 rolearn=$(aws iam get-role --role-name tap-EKSClusterRole --query Role.Arn --output text)
@@ -194,17 +148,30 @@ sgid=$(aws ec2 describe-security-groups --filters Name=description,Values="Clust
 
 echo "########################## Creating EKS Cluster ########################################"
 
-aws eks create-cluster --region ap-south-1 --name tap-demo-ekscluster --kubernetes-version 1.21 --role-arn $rolearn --resources-vpc-config subnetIds=$pubsubnet1,$pubsubnet2,securityGroupIds=$sgid
-aws eks update-kubeconfig --region ap-south-1 --name tap-demo-ekscluster
+ekscreatecluster=$(aws eks create-cluster --region $region --name tap-demo-ekscluster --kubernetes-version 1.21 --role-arn $rolearn --resources-vpc-config subnetIds=$pubsubnet1,$pubsubnet2,securityGroupIds=$sgid)
+aws eks update-kubeconfig --region $region --name tap-demo-ekscluster
 
-echo "######################### fetch the nodes and services ###########################"
-
-kubectl get nodes
-kubectl get svc
 rolenodearn=$(aws iam get-role --role-name tap-EKSNodeRole --query Role.Arn --output text)
 echo "######################### Creating Node Group ###########################"
 aws eks create-nodegroup --cluster-name tap-demo-ekscluster --nodegroup-name tap-demo-eksclusterng --node-role $rolenodearn --instance-types t2.2xlarge --scaling-config minSize=1,maxSize=2,desiredSize=2 --disk-size 40  --subnets $pubsubnet1
+echo "################ Create Repository ##################"
+aws ecr create-repository --repository-name tapdemoacr
 
+ecrusername=AWS
+ecrpassword=$(aws ecr get-login-password --region $region)
+ecrregistryid=$(aws ecr describe-repositories --repository-names tapdemoacr --query repositories[0].registryId --output text)
+ecrloginserver=$ecrregistryid.dkr.ecr.$region.amazonaws.com
+kubectl create ns tap-install
+kubectl create secret docker-registry registry-credentials --docker-server=ecrloginserver --docker-username=$ecrusername --docker-password=$ecrpassword -n tap-install
+kubectl create secret docker-registry image-secret --docker-server=ecrloginserver --docker-username=$ecrusername --docker-password=$ecrpassword -n tap-install
+        echo "######### Prepare the tap-values file ##########"
+        sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
+        sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
+        sed -i -r "s/registryname/$ecrloginserver/g" "$HOME/tap-script/tap-values.yaml"
+        sed -i -r "s/repousername/$ecrusername/g" "$HOME/tap-script/tap-values.yaml"
+        sed -i -r "s/repopassword/$ecrpassword/g" "$HOME/tap-script/tap-values.yaml"
+        sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
+        sed -i -r "s/githubtoken/$githubtoken/g" "$HOME/tap-script/tap-values.yaml"
 elif [ "$cloud" == "GKE" ];
  then
          echo "#########################################"
@@ -228,4 +195,47 @@ elif [ "$cloud" == "GKE" ];
          echo "#########################################"
          echo "#########################################"
 fi
-echo "I am done here"
+     echo "############# Install Pivnet ###########"
+     wget https://github.com/pivotal-cf/pivnet-cli/releases/download/v3.0.1/pivnet-linux-amd64-3.0.1
+     chmod +x pivnet-linux-amd64-3.0.1
+     sudo mv pivnet-linux-amd64-3.0.1 /usr/local/bin/pivnet
+         
+     echo "########## Install Tanzu CLI  #############"
+     pivnet login --api-token=${pivnettoken}
+         pivnet download-product-files --product-slug='tanzu-cluster-essentials' --release-version='1.0.0' --product-file-id=1105818
+     mkdir $HOME/tanzu-cluster-essentials
+     tar -xvf tanzu-cluster-essentials-linux-amd64-1.0.0.tgz -C $HOME/tanzu-cluster-essentials
+     export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:82dfaf70656b54dcba0d4def85ccae1578ff27054e7533d08320244af7fb0343
+     export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
+     export INSTALL_REGISTRY_USERNAME=$tanzunetusername
+     export INSTALL_REGISTRY_PASSWORD=$tanzunetpassword
+     cd $HOME/tanzu-cluster-essentials
+     ./install.sh
+     echo "######## Install Kapp ###########"
+     sudo cp $HOME/tanzu-cluster-essentials/kapp /usr/local/bin/kapp
+         kapp version
+     echo "#################################"
+         pivnet download-product-files --product-slug='tanzu-application-platform' --release-version='1.0.0' --product-file-id=1114447
+     mkdir $HOME/tanzu
+         tar -xvf tanzu-framework-linux-amd64.tar -C $HOME/tanzu
+     export TANZU_CLI_NO_INIT=true
+     cd $HOME/tanzu
+         sudo install cli/core/v0.10.0/tanzu-core-linux_amd64 /usr/local/bin/tanzu
+         tanzu version
+     tanzu plugin install --local cli all
+         tanzu plugin list
+     echo "######### Install Docker ############"
+     sudo apt-get update
+     sudo apt-get install  ca-certificates curl  gnupg  lsb-release
+     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+     sudo apt-get update
+     sudo apt-get install docker-ce docker-ce-cli containerd.io -y
+     sudo usermod -aG docker $USER
+         echo "####### Verify Docker Version  ###########"
+         sudo apt-get install jq -y
+         export INSTALL_REGISTRY_USERNAME=$tanzunetusername
+         export INSTALL_REGISTRY_PASSWORD=$tanzunetpassword
+         export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
+         tanzu secret registry add tap-registry --username ${INSTALL_REGISTRY_USERNAME} --password ${INSTALL_REGISTRY_PASSWORD} --server ${INSTALL_REGISTRY_HOSTNAME} --export-to-all-namespaces --yes --namespace tap-install
+         sudo reboot
