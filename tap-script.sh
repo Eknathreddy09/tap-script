@@ -204,34 +204,77 @@ elif [ "$cloud" == "GKE" ];
 	 gcloud version
          echo "#########################################"
          echo "#########################################"
-         gcloud components install kubectl
+         echo "############ Install Kubectl #######################"
+         curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+         sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+         echo "############  Kubectl Version #######################"
+         kubectl version
          region=$(gcloud config get-value compute/region)
          
          gcloud container clusters create --machine-type e2-standard-8 --num-nodes 1 --cluster-version latest --region=$region tap-demo-gkecluster
-         sleep 15m
          echo "######################## Create GCR Repo ##########################"
          gcloud iam service-accounts create tap-demo-gcrrepo --display-name="For TAP Images"
          projid=$(gcloud config get-value project)
          gcloud iam service-accounts keys create tap-demo-cred.json --iam-account=tap-demo-gcrrepo@$projid.iam.gserviceaccount.com
          gsutil ls
-         gsutil iam ch serviceAccount:tap-demo-gcrrepo@projid.iam.gserviceaccount.com:legacyBucketWriter gs://artifacts.$projid.appspot.com/
+         gsutil iam ch serviceAccount:tap-demo-gcrrepo@$projid.iam.gserviceaccount.com:legacyBucketWriter gs://artifacts.$projid.appspot.com/
          kubectl create ns tap-install
          echo "######### Prepare the tap-values file ##########"
-         gcrloginserver=gcr.io/$projid
-         gcrio=gcr.io
-         gcrusername='_json_key'
-         service_account_key="$(cat tap-demo-cred.json)"
-         gcrpassword= '$(echo $service_account_key)'
-         gcrsupplychain= $projid/supply-chain
-         sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
-         sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
-         sed -i -r "s/registryname/$gcrloginserver/g" "$HOME/tap-script/tap-values.yaml"
-         sed -i -r "s/registry/$gcrio/g" "$HOME/tap-script/tap-values.yaml"
-         sed -i -r "s/supply-chain/$gcrsupplychain/g" "$HOME/tap-script/tap-values.yaml"
-         sed -i -r "s/repousername/$gcrusername/g" "$HOME/tap-script/tap-values.yaml"
-         sed -i -r "s/repopassword/$gcrpassword/g" "$HOME/tap-script/tap-values.yaml"
-         sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
-         sed -i -r "s/githubtoken/$githubtoken/g" "$HOME/tap-script/tap-values.yaml"
+         projid=$(gcloud config get-value project)
+service_account_key="$(cat tap-demo-cred.json)"
+cat <<EOF > tap-values.yaml
+profile: full
+ceip_policy_disclosed: true # Installation fails if this is set to 'false'
+buildservice:
+  kp_default_repository: "gcr.io/$projid/build-service" # Replace the project id with yours. In my case eknath-se is the project ID
+  kp_default_repository_username: _json_key
+  kp_default_repository_password: '$(echo $service_account_key)'
+  tanzunet_username: "$tanzunetusername" # Provide the Tanzu network user name
+  tanzunet_password: "$tanzunetpassword" # Provide the Tanzu network password
+  descriptor_name: "tap-1.0.0-full"
+  enable_automatic_dependency_updates: true
+supply_chain: testing_scanning
+ootb_supply_chain_testing_scanning:
+  registry:
+    server: "gcr.io"
+    repository: "$projid/supply-chain" # Replace the project id with yours. In my case eknath-se is the project ID
+  gitops:
+    ssh_secret: ""
+  cluster_builder: default
+  service_account: default
+
+learningcenter:
+  ingressDomain: "$domainname" # Provide a Domain Name
+
+metadata_store:
+  app_service_type: LoadBalancer # (optional) Defaults to LoadBalancer. Change to NodePort for distributions that don't support LoadBalancer
+grype:
+  namespace: "tap-install" # (optional) Defaults to default namespace.
+  targetImagePullSecret: "registry-credentials"
+contour:
+  envoy:
+    service:
+      type: LoadBalancer
+tap_gui:
+  service_type: LoadBalancer # NodePort for distributions that don't support LoadBalancer
+  app_config:
+    app:
+      baseUrl: http://lbip:7000
+    integrations:
+      github: # Other integrations available see NOTE below
+        - host: github.com
+          token: $githubtoken  # Create a token in github
+    catalog:
+      locations:
+        - type: url
+          target: https://github.com/Eknathreddy09/tanzu-java-web-app/blob/main/catalog/catalog-info.yaml
+    backend:
+      baseUrl: http://lbip:7000
+      cors:
+        origin: http://lbip:7000
+EOF
+kubectl create secret docker-registry registry-credentials --docker-server=gcr.io --docker-username=_json_key --docker-password="$(cat tap-demo-cred.json)" -n tap-install
+kubectl create secret docker-registry image-secret --docker-server=gcr.io --docker-username=_json_key --docker-password="$(cat tap-demo-cred.json)" -n tap-install
 fi
      echo "############# Install Pivnet ###########"
      wget https://github.com/pivotal-cf/pivnet-cli/releases/download/v3.0.1/pivnet-linux-amd64-3.0.1
