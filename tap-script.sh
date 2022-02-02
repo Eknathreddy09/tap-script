@@ -66,6 +66,7 @@ if [ "$cloud" == "AKS" ];
          sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
          sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
          sed -i -r "s/registryname/$acrloginserver/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/registry/$acrloginserver/g" "$HOME/tap-script/tap-values.yaml"
          sed -i -r "s/repousername/$acrusername/g" "$HOME/tap-script/tap-values.yaml"
          sed -i -r "s/repopassword/$acrpassword/g" "$HOME/tap-script/tap-values.yaml"
          sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
@@ -176,6 +177,7 @@ kubectl create secret docker-registry image-secret --docker-server=$ecrloginserv
         sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
         sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
         sed -i -r "s/registryname/$ecrloginserver/g" "$HOME/tap-script/tap-values.yaml"
+        sed -i -r "s/registry/$ecrloginserver/g" "$HOME/tap-script/tap-values.yaml"
         sed -i -r "s/repousername/$ecrusername/g" "$HOME/tap-script/tap-values.yaml"
         sed -i -r "s/repopassword/$ecrpassword/g" "$HOME/tap-script/tap-values.yaml"
         sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
@@ -187,10 +189,10 @@ elif [ "$cloud" == "GKE" ];
 	 echo "Installing GKE cli"
          echo "#########################################"
          echo "#########################################"
-	 sudo apt-get install apt-transport-https ca-certificates gnupg
+	 sudo apt-get install apt-transport-https ca-certificates gnupg -y
 	 echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 	 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-	 sudo apt-get update && sudo apt-get install google-cloud-sdk
+	 sudo apt-get update && sudo apt-get install google-cloud-sdk -y
          echo "#########################################"
 	 echo "Authenticate to Gcloud by following the screen Instructions below"
          echo "#########################################"
@@ -202,6 +204,34 @@ elif [ "$cloud" == "GKE" ];
 	 gcloud version
          echo "#########################################"
          echo "#########################################"
+         gcloud components install kubectl
+         region=$(gcloud config get-value compute/region)
+         
+         gcloud container clusters create --machine-type e2-standard-8 --num-nodes 1 --cluster-version latest --region=$region tap-demo-gkecluster
+         sleep 15m
+         echo "######################## Create GCR Repo ##########################"
+         gcloud iam service-accounts create tap-demo-gcrrepo --display-name="For TAP Images"
+         projid=$(gcloud config get-value project)
+         gcloud iam service-accounts keys create tap-demo-cred.json --iam-account=tap-demo-gcrrepo@$projid.iam.gserviceaccount.com
+         gsutil ls
+         gsutil iam ch serviceAccount:tap-demo-gcrrepo@projid.iam.gserviceaccount.com:legacyBucketWriter gs://artifacts.$projid.appspot.com/
+         kubectl create ns tap-install
+         echo "######### Prepare the tap-values file ##########"
+         gcrloginserver=gcr.io/$projid
+         gcrio=gcr.io
+         gcrusername='_json_key'
+         service_account_key="$(cat tap-demo-cred.json)"
+         gcrpassword= '$(echo $service_account_key)'
+         gcrsupplychain= $projid/supply-chain
+         sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/registryname/$gcrloginserver/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/registry/$gcrio/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/supply-chain/$gcrsupplychain/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/repousername/$gcrusername/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/repopassword/$gcrpassword/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
+         sed -i -r "s/githubtoken/$githubtoken/g" "$HOME/tap-script/tap-values.yaml"
 fi
      echo "############# Install Pivnet ###########"
      wget https://github.com/pivotal-cf/pivnet-cli/releases/download/v3.0.1/pivnet-linux-amd64-3.0.1

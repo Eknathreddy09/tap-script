@@ -11,7 +11,7 @@ buildservice:
 supply_chain: testing_scanning
 ootb_supply_chain_testing_scanning:
   registry:
-    server: "registryname"
+    server: "registry"
     repository: "supply-chain" # Replace the project id with yours. In my case eknath-se is the project ID
   gitops:
     ssh_secret: ""
