@@ -76,6 +76,8 @@ if [ "$cloud" == "AKS" ];
 elif [ "$cloud" == "EKS" ];
  then
 	 read -p "Enter the region: " region
+         read -p "Enter the dockerhub username: " dockerusername
+         read -p "Enter the dockerhub password: " dockerpassword
          echo "#########################################"
          echo "#########################################"
 	 echo "Installing AWS cli"
@@ -162,24 +164,76 @@ aws eks create-nodegroup --cluster-name tap-demo-ekscluster --nodegroup-name tap
 
 echo "############## Waiting for Node groups to get created ###################"
 sleep 10m
-echo "################ Create Repository ##################"
-aws ecr create-repository --repository-name tapdemoacr
-sleep 2m
-ecrusername=AWS
-ecrpassword=$(aws ecr get-login-password --region $region)
-ecrregistryid=$(aws ecr describe-repositories --repository-names tapdemoacr --query repositories[0].registryId --output text)
-ecrloginserver=$ecrregistryid.dkr.ecr.$region.amazonaws.com
+echo "################ Prepare Tap values file ##################"
+#aws ecr create-repository --repository-name tapdemoacr
+#ecrusername=AWS
+#ecrpassword=$(aws ecr get-login-password --region $region)
+#ecrregistryid=$(aws ecr describe-repositories --repository-names tapdemoacr --query repositories[0].registryId --output text)
+#ecrloginserver=$ecrregistryid.dkr.ecr.$region.amazonaws.com
+cat <<EOF > tap-values.yaml
+profile: full
+ceip_policy_disclosed: true # Installation fails if this is set to 'false'
+buildservice:
+  kp_default_repository: "index.docker.io/$dockerusername/build-service" # Replace the project id with yours. In my case eknath-se is the project ID
+  kp_default_repository_username: $dockerusername
+  kp_default_repository_password: $dockerpassword
+  tanzunet_username: "$tanzunetusername" # Provide the Tanzu network user name
+  tanzunet_password: "$tanzunetpassword" # Provide the Tanzu network password
+  descriptor_name: "tap-1.0.0-full"
+  enable_automatic_dependency_updates: true
+supply_chain: testing_scanning
+ootb_supply_chain_testing_scanning:
+  registry:
+    server: "index.docker.io"
+    repository: "$dockerusername" # Replace the project id with yours. In my case eknath-se is the project ID
+  gitops:
+    ssh_secret: ""
+  cluster_builder: default
+  service_account: default
+
+learningcenter:
+  ingressDomain: "$domainname" # Provide a Domain Name
+
+metadata_store:
+  app_service_type: LoadBalancer # (optional) Defaults to LoadBalancer. Change to NodePort for distributions that don't support LoadBalancer
+grype:
+  namespace: "tap-install" # (optional) Defaults to default namespace.
+  targetImagePullSecret: "registry-credentials"
+contour:
+  envoy:
+    service:
+      type: LoadBalancer
+tap_gui:
+  service_type: LoadBalancer # NodePort for distributions that don't support LoadBalancer
+  app_config:
+    app:
+      baseUrl: http://lbip:7000
+    integrations:
+      github: # Other integrations available see NOTE below
+        - host: github.com
+          token: $githubtoken  # Create a token in github
+    catalog:
+      locations:
+        - type: url
+          target: https://github.com/Eknathreddy09/tanzu-java-web-app/blob/main/catalog/catalog-info.yaml
+    backend:
+      baseUrl: http://lbip:7000
+      cors:
+        origin: http://lbip:7000
+EOF
 kubectl create ns tap-install
-kubectl create secret docker-registry registry-credentials --docker-server=$ecrloginserver --docker-username=$ecrusername --docker-password=$ecrpassword -n tap-install
-kubectl create secret docker-registry image-secret --docker-server=$ecrloginserver --docker-username=$ecrusername --docker-password=$ecrpassword -n tap-install
-        echo "######### Prepare the tap-values file ##########"
-        sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
-        sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
-        sed -i -r "s/registryname/$ecrloginserver/g" "$HOME/tap-script/tap-values.yaml"
-        sed -i -r "s/repousername/$ecrusername/g" "$HOME/tap-script/tap-values.yaml"
-        sed -i -r "s/repopassword/$ecrpassword/g" "$HOME/tap-script/tap-values.yaml"
-        sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
-        sed -i -r "s/githubtoken/$githubtoken/g" "$HOME/tap-script/tap-values.yaml"
+kubectl create secret docker-registry registry-credentials --docker-server=https://index.docker.io/v1/ --docker-username=$dockerusername --docker-password=$dockerpassword -n tap-install
+kubectl create secret docker-registry image-secret --docker-server=https://index.docker.io/v1/ --docker-username=$dockerusername --docker-password=$dockerpassword -n tap-install
+#        echo "######### Prepare the tap-values file ##########"
+#        sed -i -r "s/tanzunetusername/$tanzunetusername/g" "$HOME/tap-script/tap-values.yaml"
+#        sed -i -r "s/tanzunetpassword/$tanzunetpassword/g" "$HOME/tap-script/tap-values.yaml"
+#        sed -i -r "s/registryname/$ecrloginserver/g" "$HOME/tap-script/tap-values.yaml"
+#        sed -i -r "s/repousername/$ecrusername/g" "$HOME/tap-script/tap-values.yaml"
+#        sed -i -r "s/repopassword/$ecrpassword/g" "$HOME/tap-script/tap-values.yaml"
+#        sed -i -r "s/domainname/$domainname/g" "$HOME/tap-script/tap-values.yaml"
+#        sed -i -r "s/repousername/$dockerusername/g" "$HOME/tap-script/tap-values.yaml"
+#        sed -i -r "s/repopassword/$dockerpassword/g" "$HOME/tap-script/tap-values.yaml"
+#        sed -i -r "s/githubtoken/$githubtoken/g" "$HOME/tap-script/tap-values.yaml"
 elif [ "$cloud" == "GKE" ];
  then
          echo "#########################################"
