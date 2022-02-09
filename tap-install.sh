@@ -12,7 +12,7 @@
 #echo "################# Create secret tap-registry ##############################"
 #tanzu secret registry add tap-registry --username ${INSTALL_REGISTRY_USERNAME} --password ${INSTALL_REGISTRY_PASSWORD} --server ${INSTALL_REGISTRY_HOSTNAME} --export-to-all-namespaces --yes --namespace tap-install
 
-echo "############# Add Tanzu Application Platform package repository to the cluster ####################"
+echo "############# Adding Tanzu Application Platform package repository to the cluster ####################"
 tanzu package repository add tanzu-tap-repository --url registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:1.0.0 --namespace tap-install
 tanzu package repository get tanzu-tap-repository --namespace tap-install
 echo "############# List the available packages ####################"
@@ -49,7 +49,7 @@ echo "############## Get the package install status #################"
 tanzu package installed get tap -n tap-install
 tanzu package installed list -A
 
-echo "############# Update tap-values file with LB ip ################"
+echo "############# Updating tap-values file with LB ip ################"
 
 ip=$(kubectl get svc -n tap-gui -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
 hostname=$(kubectl get svc -n tap-gui -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
@@ -190,8 +190,12 @@ grype:
   targetImagePullSecret: registry-credentials
 EOF
 
-
+echo "################### Installing Grype Scanner ##############################"
 tanzu package install grype-scanner --package-name grype.scanning.apps.tanzu.vmware.com --version 1.0.0  --namespace tap-install -f ootb-supply-chain-basic-values.yaml
+echo "################### Creating workload ##############################"
 tanzu apps workload create tanzu-java-web-app  --git-repo https://github.com/Eknathreddy09/tanzu-java-web-app --git-branch main --type web --label apps.tanzu.vmware.com/has-tests=true --label app.kubernetes.io/part-of=tanzu-java-web-app  --type web -n tap-install --yes
 tanzu apps workload get tanzu-java-web-app -n tap-install
+echo "#######################################################################"
+echo "################ Monitor the progress #################################"
+echo "#######################################################################"
 tanzu apps workload tail tanzu-java-web-app --since 10m --timestamp -n tap-install
