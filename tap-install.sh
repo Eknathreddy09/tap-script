@@ -52,7 +52,13 @@ tanzu package installed list -A
 echo "############# Update tap-values file with LB ip ################"
 
 ip=$(kubectl get svc -n tap-gui -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-sed -i -r "s/lbip/$ip/g" "$HOME/tap-script/tap-values.yaml"
+hostname=$(kubectl get svc -n tap-gui -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
+if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]];
+ then
+   sed -i -r "s/lbip/$ip/g" "$HOME/tap-script/tap-values.yaml"
+else
+sed -i -r "s/lbip/$hostname/g" "$HOME/tap-script/tap-values.yaml"
+fi
 tanzu package installed update tap --package-name tap.tanzu.vmware.com --version 1.0.0 -n tap-install -f $HOME/tap-script/tap-values.yaml
 tanzu package installed list -A
 
