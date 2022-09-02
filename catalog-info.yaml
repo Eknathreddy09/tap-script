@@ -1,4 +1,69 @@
 apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: demo-domain
+  description: Demo Domain for Tanzu Application Platform
+  annotations:
+    'backstage.io/techdocs-ref': dir:.
+spec:
+  owner: demo-team
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-app-ms-1
+  description: Demo Application's Microservice-1
+  tags:
+    - microservice
+  annotations:
+    'backstage.io/kubernetes-label-selector': 'app.kubernetes.io/part-of=demo-app-ms-1'
+    'backstage.io/techdocs-ref': dir:.
+spec:
+  type: service
+  providesApis:
+   - demo-api
+  lifecycle: alpha
+  owner: demo-team
+  system: demo-app
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-app-ms-2
+  description: Demo Application's Microservice-2
+  tags:
+    - microservice
+  annotations:
+    'backstage.io/kubernetes-label-selector': 'app.kubernetes.io/part-of=demo-app-ms-2'
+    'backstage.io/techdocs-ref': dir:.
+spec:
+  type: service
+  consumesApis:
+   - demo-api
+  lifecycle: alpha
+  owner: demo-team
+  system: demo-app
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: demo-app
+  description: Demo Application for Tanzu Application Platform
+  annotations:
+    'backstage.io/techdocs-ref': dir:.
+spec:
+  owner: demo-team
+  domain: demo-domain
+
+---
+
+apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
   name: demo-api
@@ -15,7 +80,7 @@ spec:
   definition: |
     openapi: 3.0.1
     info:
-      title: defaultTitle
+      title: Demo API
       description: defaultDescription
       version: '0.1'
     servers:
@@ -37,4 +102,4 @@ spec:
                 application/json; charset=utf-8:
                   schema:
                     type: string
-                  examples: {}        
+                  examples: {}
