@@ -88,6 +88,7 @@ spec:
       version: '0.1'
     servers:
       - url: https://api.agify.io
+      - url: https://petstore.swagger.io/v2/swagger.json
     paths:
       /:
         get:
