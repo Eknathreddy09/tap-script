@@ -72,6 +72,9 @@ metadata:
     - url: https://api.agify.io
       title: API Definition
       icon: docs
+    - url: https://petstore.swagger.io/v2/swagger.json
+      title: petstore
+      icon: docs
 spec:
   type: openapi
   lifecycle: experimental
