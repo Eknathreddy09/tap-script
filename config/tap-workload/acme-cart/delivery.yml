@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acme-cart
+  annotations:
+    kapp.k14s.io/update-strategy: fallback-on-replace
+    ootb.apps.tanzu.vmware.com/servicebinding-workload: "true"
+    kapp.k14s.io/change-rule: upsert after upserting servicebinding.io/ServiceBindings
+  labels:
+    app.kubernetes.io/part-of: acme-fitness-store
+    apps.tanzu.vmware.com/workload-type: server
+    app.kubernetes.io/component: run
+    carto.run/workload-name: acme-cart
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: run
+      app.kubernetes.io/part-of: acme-fitness-store
+      apps.tanzu.vmware.com/workload-type: server
+      carto.run/workload-name: acme-cart
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        conventions.carto.run/applied-conventions: |-
+          spring-boot-convention/auto-configure-actuators-check
+          spring-boot-convention/app-live-view-appflavour-check
+          appliveview-sample/app-live-view-appflavour-check
+        developer.conventions/target-containers: workload
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"carto.run/v1alpha1","kind":"Workload","metadata":{"annotations":{},"labels":{"app.kubernetes.io/part-of":"acme-fitness-store","apps.tanzu.vmware.com/workload-type":"server"},"name":"acme-cart","namespace":"tap-workload"},"spec":{"env":[{"name":"CART_PORT","value":"8080"},{"name":"AUTH_URL","value":"http://authserver.tap.captainvirtualization.co.in"},{"name":"AUTH_MODE","value":"1"},{"name":"REDIS_HOST","value":"cart-redis"},{"name":"REDIS_PORT","value":"6379"},{"name":"REDIS_PASSWORD","valueFrom":{"secretKeyRef":{"key":"password","name":"cart-redis-pass"}}}],"params":[{"name":"annotations","value":{"autoscaling.knative.dev/minScale":"1"}},{"name":"ports","value":[{"containerPort":8080,"name":"http","port":80}]}],"source":{"git":{"ref":{"branch":"main"},"url":"https://github.com/gm2552/acme-fitness-store"},"subPath":"apps/acme-cart"}}}
+      labels:
+        app.kubernetes.io/component: run
+        app.kubernetes.io/part-of: acme-fitness-store
+        apps.tanzu.vmware.com/workload-type: server
+        carto.run/workload-name: acme-cart
+    spec:
+      containers:
+      - env:
+        - name: CART_PORT
+          value: "8080"
+        - name: AUTH_URL
+          value: http://authserver.tap.captainvirtualization.co.in
+        - name: AUTH_MODE
+          value: "1"
+        - name: REDIS_HOST
+          value: cart-redis
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: cart-redis-pass
+        image: tapdemoacr.azurecr.io/tap-packages141/build-service/acme-cart-tap-workload@sha256:852d6b4a06791b3a7dc95ed24682b31cfca94cb2c6deb9312f44088803584a39
+        name: workload
+        resources: {}
+        securityContext:
+          runAsUser: 1000
+      serviceAccountName: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: acme-cart
+  labels:
+    app.kubernetes.io/part-of: acme-fitness-store
+    apps.tanzu.vmware.com/workload-type: server
+    app.kubernetes.io/component: run
+    carto.run/workload-name: acme-cart
+spec:
+  selector:
+    app.kubernetes.io/component: run
+    app.kubernetes.io/part-of: acme-fitness-store
+    apps.tanzu.vmware.com/workload-type: server
+    carto.run/workload-name: acme-cart
+  ports:
+  - targetPort: 8080
+    port: 80
+    name: http
+
