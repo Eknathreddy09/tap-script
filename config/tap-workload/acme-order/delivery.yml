@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acme-order
+  annotations:
+    kapp.k14s.io/update-strategy: fallback-on-replace
+    ootb.apps.tanzu.vmware.com/servicebinding-workload: "true"
+    kapp.k14s.io/change-rule: upsert after upserting servicebinding.io/ServiceBindings
+  labels:
+    app.kubernetes.io/part-of: acme-fitness-store
+    apps.tanzu.vmware.com/workload-type: server
+    networking.knative.dev/visibility: cluster-local
+    app.kubernetes.io/component: run
+    carto.run/workload-name: acme-order
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: run
+      app.kubernetes.io/part-of: acme-fitness-store
+      apps.tanzu.vmware.com/workload-type: server
+      carto.run/workload-name: acme-order
+      networking.knative.dev/visibility: cluster-local
+      tanzu.app.live.view: "true"
+      tanzu.app.live.view.application.flavours: steeltoe
+      tanzu.app.live.view.application.name: acme-order
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        conventions.carto.run/applied-conventions: |-
+          spring-boot-convention/auto-configure-actuators-check
+          spring-boot-convention/app-live-view-appflavour-check
+          appliveview-sample/app-live-view-appflavour-check
+          appliveview-sample/app-live-view-connector-steeltoe
+          appliveview-sample/app-live-view-appflavours-steeltoe
+        developer.conventions/target-containers: workload
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"carto.run/v1alpha1","kind":"Workload","metadata":{"annotations":{},"labels":{"app.kubernetes.io/part-of":"acme-fitness-store","apps.tanzu.vmware.com/workload-type":"server","networking.knative.dev/visibility":"cluster-local"},"name":"acme-order","namespace":"tap-workload"},"spec":{"env":[{"name":"AcmeServiceSettings__AuthUrl","value":"http://authserver.tap.captainvirtualization.co.in"},{"name":"PAYMENT_SERVICE_SERVICE_HOST","value":"acme-payment"}],"params":[{"name":"annotations","value":{"autoscaling.knative.dev/minScale":"1"}},{"name":"ports","value":[{"containerPort":8080,"name":"http","port":80}]}],"source":{"git":{"ref":{"branch":"main"},"url":"https://github.com/gm2552/acme-fitness-store"},"subPath":"apps/acme-order"}}}
+      labels:
+        app.kubernetes.io/component: run
+        app.kubernetes.io/part-of: acme-fitness-store
+        apps.tanzu.vmware.com/workload-type: server
+        carto.run/workload-name: acme-order
+        networking.knative.dev/visibility: cluster-local
+        tanzu.app.live.view: "true"
+        tanzu.app.live.view.application.flavours: steeltoe
+        tanzu.app.live.view.application.name: acme-order
+    spec:
+      containers:
+      - env:
+        - name: AcmeServiceSettings__AuthUrl
+          value: http://authserver.tap.captainvirtualization.co.in
+        - name: PAYMENT_SERVICE_SERVICE_HOST
+          value: acme-payment
+        image: tapdemoacr.azurecr.io/tap-packages141/build-service/acme-order-tap-workload@sha256:565e805fdf7b75784dc9176622618720ae45d00f4d67198cc7ba119b8f9b913f
+        name: workload
+        resources: {}
+        securityContext:
+          runAsUser: 1000
+      serviceAccountName: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: acme-order
+  labels:
+    app.kubernetes.io/part-of: acme-fitness-store
+    apps.tanzu.vmware.com/workload-type: server
+    networking.knative.dev/visibility: cluster-local
+    app.kubernetes.io/component: run
+    carto.run/workload-name: acme-order
+spec:
+  selector:
+    app.kubernetes.io/component: run
+    app.kubernetes.io/part-of: acme-fitness-store
+    apps.tanzu.vmware.com/workload-type: server
+    carto.run/workload-name: acme-order
+    networking.knative.dev/visibility: cluster-local
+    tanzu.app.live.view: "true"
+    tanzu.app.live.view.application.flavours: steeltoe
+    tanzu.app.live.view.application.name: acme-order
+  ports:
+  - targetPort: 8080
+    port: 80
+    name: http
+
