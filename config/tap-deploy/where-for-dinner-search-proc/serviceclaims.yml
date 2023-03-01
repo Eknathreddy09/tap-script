@@ -1,0 +1,41 @@
+apiVersion: kapp.k14s.io/v1alpha1
+kind: Config
+waitRules:
+- conditionMatchers:
+  - type: ServiceAvailable
+    status: "False"
+    failure: true
+  - type: ServiceAvailable
+    status: "True"
+    success: true
+  resourceMatchers:
+  - apiVersionKindMatcher:
+      apiVersion: servicebinding.io/v1alpha3
+      kind: ServiceBinding
+---
+apiVersion: servicebinding.io/v1alpha3
+kind: ServiceBinding
+metadata:
+  name: where-for-dinner-search-proc-rmq
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"carto.run/v1alpha1","kind":"Workload","metadata":{"annotations":{},"labels":{"app.kubernetes.io/part-of":"where-for-dinner-search-proc","apps.tanzu.vmware.com/workload-type":"web","networking.knative.dev/visibility":"cluster-local"},"name":"where-for-dinner-search-proc","namespace":"tap-deploy"},"spec":{"params":[{"name":"annotations","value":{"autoscaling.knative.dev/minScale":"1"}}],"serviceClaims":[{"name":"rmq","ref":{"apiVersion":"services.apps.tanzu.vmware.com/v1alpha1","kind":"ResourceClaim","name":"rmq-where-for-dinner"}}],"source":{"git":{"ref":{"branch":"main"},"url":"https://github.com/jsvirdi80/jsvirdi80-where-for-dinner.git"},"subPath":"where-for-dinner-search-proc"}}}
+    autoscaling.knative.dev/minScale: "1"
+    kapp.k14s.io/change-group: servicebinding.io/ServiceBindings
+  labels:
+    app.kubernetes.io/part-of: where-for-dinner-search-proc
+    apps.tanzu.vmware.com/workload-type: web
+    networking.knative.dev/visibility: cluster-local
+    app.kubernetes.io/component: run
+    carto.run/workload-name: where-for-dinner-search-proc
+spec:
+  name: rmq
+  service:
+    apiVersion: services.apps.tanzu.vmware.com/v1alpha1
+    kind: ResourceClaim
+    name: rmq-where-for-dinner
+  workload:
+    apiVersion: serving.knative.dev/v1
+    kind: Service
+    name: where-for-dinner-search-proc
+
