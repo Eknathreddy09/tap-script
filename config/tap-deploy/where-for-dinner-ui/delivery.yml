@@ -24,7 +24,7 @@ spec:
           appliveview-sample/app-live-view-appflavour-check
         developer.conventions/target-containers: workload
         kubectl.kubernetes.io/last-applied-configuration: |
-          {"apiVersion":"carto.run/v1alpha1","kind":"Workload","metadata":{"annotations":{},"labels":{"app.kubernetes.io/part-of":"where-for-dinner-ui","apps.tanzu.vmware.com/workload-type":"web","networking.knative.dev/visibility":"cluster-local"},"name":"where-for-dinner-ui","namespace":"tap-deploy"},"spec":{"params":[{"name":"annotations","value":{"app.kubernetes.io/part-of":"where-for-dinner","autoscaling.knative.dev/minScale":"1"}}],"source":{"git":{"ref":{"branch":"main"},"url":"https://github.com/vmware-tanzu/application-accelerator-samples.git"},"subPath":"where-for-dinner/where-for-dinner-ui"}}}
+          {"apiVersion":"carto.run/v1alpha1","kind":"Workload","metadata":{"annotations":{},"labels":{"app.kubernetes.io/part-of":"where-for-dinner-ui","apps.tanzu.vmware.com/workload-type":"web","networking.knative.dev/visibility":"cluster-local"},"name":"where-for-dinner-ui","namespace":"tap-deploy"},"spec":{"params":[{"name":"annotations","value":{"app.kubernetes.io/part-of":"where-for-dinner","autoscaling.knative.dev/minScale":"1"}}],"source":{"git":{"ref":{"branch":"main"},"url":"https://github.com/jsvirdi80/jsvirdi80-where-for-dinner.git"},"subPath":"where-for-dinner-ui"}}}
       labels:
         app.kubernetes.io/component: run
         app.kubernetes.io/part-of: where-for-dinner-ui
@@ -33,7 +33,7 @@ spec:
         networking.knative.dev/visibility: cluster-local
     spec:
       containers:
-      - image: tapdemoacr.azurecr.io/tap-packages141/build-service/where-for-dinner-ui-tap-deploy@sha256:8a4af3cffa6c88428d435655df8e08344613546d7ea20730018fd4b586c0c607
+      - image: tapdemoacr.azurecr.io/tap-packages141/build-service/where-for-dinner-ui-tap-deploy@sha256:6366e8dadb9d43e9e318770c5cab2da92df12519a71e5326cd7e6675f0673e24
         name: workload
         resources: {}
         securityContext:
