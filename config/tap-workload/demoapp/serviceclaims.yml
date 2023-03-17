@@ -18,7 +18,6 @@ kind: ServiceBinding
 metadata:
   name: demoapp-db
   annotations:
-    autoscaling.knative.dev/minScale: "1"
     kapp.k14s.io/change-group: servicebinding.io/ServiceBindings
   labels:
     app.kubernetes.io/part-of: petclinic-server
