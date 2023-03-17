@@ -16,7 +16,6 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "1"
         boot.spring.io/version: 2.6.2
         conventions.carto.run/applied-conventions: |-
           spring-boot-convention/auto-configure-actuators-check
@@ -54,7 +53,7 @@ spec:
       - env:
         - name: JAVA_TOOL_OPTIONS
           value: -Dmanagement.endpoint.health.probes.add-additional-paths="true" -Dmanagement.health.probes.enabled="true" -Dserver.port="8080" -Dserver.shutdown.grace-period="24s"
-        image: exploreindiatapsolreg.azurecr.io/tap142/build-service/demoapp-tap-workload@sha256:d861d86646162255c99c8d78decf9d7db2a3f9963625d918614ab52ba3a0cf8b
+        image: exploreindiatapsolreg.azurecr.io/tap142/build-service/demoapp-tap-workload@sha256:231866cb50eb6d307f50ec9806f689d769e149503a2da6aae04c7e2d3ca5afca
         livenessProbe:
           httpGet:
             path: /livez
