@@ -59,7 +59,7 @@ spec:
           value: |-
             -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=9005
              -Dmanagement.endpoint.health.probes.add-additional-paths="true" -Dmanagement.health.probes.enabled="true" -Dserver.port="8080" -Dserver.shutdown.grace-period="24s" -Dspring.devtools.restart.enabled="true" -Dspring.devtools.restart.poll-interval="2s" -Dspring.devtools.restart.quiet-period="1s"
-        image: exploreindiatapsolreg.azurecr.io/tap142/build-service/vacdemo-tap-workload@sha256:d19c72f6993654f899d6cebee099ed97915693fa2fda6a7b413a8b3428e4305c
+        image: exploreindiatapsolreg.azurecr.io/tap142/build-service/vacdemo-tap-workload@sha256:15f1f99807f9bc9dde1891335168344fd9919ffafd22a669abb90fe7ba0fc0bd
         livenessProbe:
           httpGet:
             path: /livez
