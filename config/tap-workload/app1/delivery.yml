@@ -16,6 +16,7 @@ spec:
   template:
     metadata:
       annotations:
+        autoscaling.knative.dev/minScale: "1"
         boot.spring.io/version: 2.7.3
         conventions.carto.run/applied-conventions: |-
           spring-boot-convention/auto-configure-actuators-check
