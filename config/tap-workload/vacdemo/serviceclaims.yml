@@ -1,0 +1,39 @@
+apiVersion: kapp.k14s.io/v1alpha1
+kind: Config
+waitRules:
+- conditionMatchers:
+  - type: ServiceAvailable
+    status: "False"
+    failure: true
+  - type: ServiceAvailable
+    status: "True"
+    success: true
+  resourceMatchers:
+  - apiVersionKindMatcher:
+      apiVersion: servicebinding.io/v1alpha3
+      kind: ServiceBinding
+---
+apiVersion: servicebinding.io/v1alpha3
+kind: ServiceBinding
+metadata:
+  name: vacdemo-spring-petclinic-db
+  annotations:
+    kapp.k14s.io/change-group: servicebinding.io/ServiceBindings
+  labels:
+    app.kubernetes.io/part-of: petclinic-server
+    apps.kubernetes.io/name: spring-petclinic
+    apps.tanzu.vmware.com/has-tests: "true"
+    apps.tanzu.vmware.com/workload-type: web
+    app.kubernetes.io/component: run
+    carto.run/workload-name: vacdemo
+spec:
+  name: spring-petclinic-db
+  service:
+    apiVersion: v1
+    kind: Secret
+    name: spring-petclinic-db
+  workload:
+    apiVersion: serving.knative.dev/v1
+    kind: Service
+    name: vacdemo
+
